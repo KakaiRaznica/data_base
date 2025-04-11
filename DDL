@@ -1,0 +1,73 @@
+-- Создание таблицы RESTAURANTS (Рестораны)
+CREATE TABLE RESTAURANTS (
+    restaurant_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    cuisine_type VARCHAR(50) NOT NULL,
+    address VARCHAR(100) NOT NULL,
+    rating DECIMAL(3,1) CHECK (rating BETWEEN 0 AND 5)
+);
+
+-- Создание таблицы CUSTOMERS (Клиенты)
+CREATE TABLE CUSTOMERS (
+    customer_id SERIAL PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    address VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    CONSTRAINT phone_format CHECK (phone ~ '^[0-9]{10,15}$'),
+    CONSTRAINT unique_phone UNIQUE (phone)
+);
+
+-- Создание таблицы COURIERS (Курьеры)
+CREATE TABLE COURIERS (
+    courier_id SERIAL PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    transport_type VARCHAR(20) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    CONSTRAINT transport_check CHECK (transport_type IN ('велосипед', 'авто', 'пеший')),
+    CONSTRAINT courier_phone_format CHECK (phone ~ '^[0-9]{3,15}$')
+);
+
+-- Создание таблицы DISHES (Блюда)
+CREATE TABLE DISHES (
+    dish_id SERIAL PRIMARY KEY,
+    restaurant_id INTEGER NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    CONSTRAINT price_check CHECK (price > 0),
+    FOREIGN KEY (restaurant_id) REFERENCES RESTAURANTS(restaurant_id)
+);
+
+-- Создание таблицы ORDERS (Заказы)
+CREATE TABLE ORDERS (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL,
+    restaurant_id INTEGER NOT NULL,
+    courier_id INTEGER NOT NULL,
+    order_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES CUSTOMERS(customer_id),
+    FOREIGN KEY (restaurant_id) REFERENCES RESTAURANTS(restaurant_id),
+    FOREIGN KEY (courier_id) REFERENCES COURIERS(courier_id)
+);
+
+-- Создание таблицы ORDER_DISHES (Состав заказа)
+CREATE TABLE ORDER_DISHES (
+    order_dishes_id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL,
+    dish_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL,
+    CONSTRAINT quantity_check CHECK (quantity > 0),
+    FOREIGN KEY (order_id) REFERENCES ORDERS(order_id),
+    FOREIGN KEY (dish_id) REFERENCES DISHES(dish_id)
+);
+
+-- Создание таблицы DISHES_PRICE (История изменения цен)
+CREATE TABLE DISHES_PRICE (
+    history_id SERIAL PRIMARY KEY,
+    dish_id INTEGER NOT NULL,
+    old_price DECIMAL(10,2) NOT NULL,
+    new_price DECIMAL(10,2) NOT NULL,
+    change_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (dish_id) REFERENCES DISHES(dish_id),
+    CONSTRAINT price_change_check CHECK (old_price > 0 AND new_price > 0)
+);
