@@ -1,0 +1,78 @@
+--Топ-3 ресторана с наибольшим числом заказов
+SELECT r.name, COUNT(o.order_id ) AS order_count
+FROM restaurants r
+JOIN orders o ON r.restaurant_id  = o.restaurant_id
+GROUP BY r.name
+ORDER BY order_count DESC
+LIMIT 3;
+--Заказы, в которых заказано более 2 разных блюд
+SELECT od.order_id, COUNT(DISTINCT od.dish_id) AS dish_count
+FROM order_dishes od
+GROUP BY od.order_id
+HAVING COUNT(DISTINCT od.dish_id) > 2
+ORDER BY dish_count DESC;
+--Клиенты, сделавшие заказ в ресторане с рейтингом выше 4.5
+SELECT DISTINCT c.full_name
+FROM customers c
+WHERE EXISTS (
+    SELECT 1
+    FROM orders o
+    JOIN restaurants r ON o.restaurant_id = r.restaurant_id 
+    WHERE o.customer_id = c.customer_id  AND r.rating > 4.5
+);
+--Вывести всех клиентов с количеством заказов
+SELECT 
+    c.full_name, 
+    COALESCE(COUNT(o.order_id), 0) AS order_count
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+GROUP BY c.full_name
+ORDER BY order_count DESC;
+
+
+--Курьеры, доставлявшие заказы в большее количество разных районов (адресов клиентов)
+SELECT c.full_name, COUNT(DISTINCT cust.address) AS unique_addresses
+FROM couriers c
+JOIN orders o ON o.courier_id = c.courier_id 
+JOIN customers cust ON o.customer_id = cust.customer_id 
+GROUP BY c.full_name
+ORDER BY unique_addresses DESC;
+--Самые дорогие заказы: сумма > среднего значения
+SELECT o.order_id , SUM(od.quantity * d.price) AS total
+FROM orders o
+JOIN order_dishes od ON o.order_id = od.order_id
+JOIN dishes d ON od.dish_id = d.dish_id 
+GROUP BY o.order_id
+HAVING SUM(od.quantity * d.price) > (
+    SELECT AVG(od2.quantity * d2.price)
+    FROM order_dishes od2
+    JOIN dishes d2 ON od2.dish_id = d2.dish_id 
+)
+ORDER BY total DESC;
+--Последние 5 заказов по дате
+SELECT o.order_id, o.order_date, c.full_name AS customer, r.name AS restaurant
+FROM orders o
+JOIN customers c ON o.customer_id = c.customer_id 
+JOIN restaurants r ON o.restaurant_id = r.restaurant_id 
+ORDER BY o.order_date DESC
+LIMIT 5 OFFSET 0;
+--Блюда с ценой больше 500
+SELECT dish_id, name, price
+FROM dishes
+WHERE dish_id IN (
+    SELECT dish_id
+    FROM dishes
+    WHERE price > 500
+)
+ORDER BY price DESC;
+--Количество клиентов без заказов
+SELECT COUNT(*) AS customer_without_orders
+FROM customers c
+WHERE NOT EXISTS (
+    SELECT 1 FROM orders o WHERE o.customer_id  = c.customer_id 
+);
+--Вывод заказов с порядковым номером для каждого клиента
+SELECT c.full_name, o.order_id AS order_id, o.order_date,
+       ROW_NUMBER() OVER (PARTITION BY c.customer_id ORDER BY o.order_date) AS order_number
+FROM customers c
+JOIN orders o ON c.customer_id  = o.customer_id;
