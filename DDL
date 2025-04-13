@@ -1,0 +1,59 @@
+-- Создание таблицы RESTAURANTS (Рестораны)
+CREATE TABLE RESTAURANTS (
+    restaurant_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    cuisine_type VARCHAR(50) NOT NULL,
+    address VARCHAR(100) NOT NULL,
+    rating DECIMAL(3,1) CHECK (rating BETWEEN 0 AND 5)
+);
+
+-- Создание таблицы CUSTOMERS (Клиенты)
+CREATE TABLE CUSTOMERS (
+    customer_id SERIAL PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    address VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL UNIQUE CHECK (phone ~ '^[0-9]{3,15}$')
+);
+
+-- Создание таблицы COURIERS (Курьеры)
+CREATE TABLE COURIERS (
+    courier_id SERIAL PRIMARY KEY,
+    full_name VARCHAR(100) NOT NULL,
+    transport_type VARCHAR(20) NOT NULL CHECK (transport_type IN ('велосипед', 'авто', 'пеший')),
+    phone VARCHAR(20) NOT NULL CHECK (phone ~ '^[0-9]{3,15}$')
+);
+
+-- Создание таблицы DISHES (Блюда)
+CREATE TABLE DISHES (
+    dish_id SERIAL PRIMARY KEY,
+    restaurant_id INTEGER NOT NULL REFERENCES RESTAURANTS(restaurant_id),
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10,2) NOT NULL CHECK (price > 0),
+    category VARCHAR(50) NOT NULL
+);
+
+-- Создание таблицы ORDERS (Заказы)
+CREATE TABLE ORDERS (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INTEGER NOT NULL REFERENCES CUSTOMERS(customer_id),
+    restaurant_id INTEGER NOT NULL REFERENCES RESTAURANTS(restaurant_id),
+    courier_id INTEGER NOT NULL REFERENCES COURIERS(courier_id),
+    order_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Создание таблицы ORDER_DISHES (Состав заказа)
+CREATE TABLE ORDER_DISHES (
+    order_dishes_id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL REFERENCES ORDERS(order_id),
+    dish_id INTEGER NOT NULL REFERENCES DISHES(dish_id),
+    quantity INTEGER NOT NULL CHECK (quantity > 0)
+);
+
+-- Создание таблицы DISHES_PRICE (История изменения цен)
+CREATE TABLE DISHES_PRICE (
+    history_id SERIAL PRIMARY KEY,
+    dish_id INTEGER NOT NULL REFERENCES DISHES(dish_id),
+    old_price DECIMAL(10,2) NOT NULL,CHECK (old_price > 0),
+    new_price DECIMAL(10,2) NOT NULL,CHECK (new_price > 0),
+    change_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
